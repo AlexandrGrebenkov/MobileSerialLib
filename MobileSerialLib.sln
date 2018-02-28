@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27004.2009
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MobileSerialLib", "MobileSerialLib\MobileSerialLib.csproj", "{AAB21A0E-1B0E-496B-83A9-17772E4057A1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MobileSerial_BLE", "MobileSerial_BLE\MobileSerial_BLE.csproj", "{A92ABD07-4057-458C-84D0-116AD4003FA9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MobileSerial_BLE.Droid", "MobileSerial_BLE.Droid\MobileSerial_BLE.Droid.csproj", "{33EDA964-8877-4AFD-A5FC-553D9512DE47}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AAB21A0E-1B0E-496B-83A9-17772E4057A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AAB21A0E-1B0E-496B-83A9-17772E4057A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AAB21A0E-1B0E-496B-83A9-17772E4057A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AAB21A0E-1B0E-496B-83A9-17772E4057A1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A92ABD07-4057-458C-84D0-116AD4003FA9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A92ABD07-4057-458C-84D0-116AD4003FA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A92ABD07-4057-458C-84D0-116AD4003FA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A92ABD07-4057-458C-84D0-116AD4003FA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{33EDA964-8877-4AFD-A5FC-553D9512DE47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33EDA964-8877-4AFD-A5FC-553D9512DE47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33EDA964-8877-4AFD-A5FC-553D9512DE47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{33EDA964-8877-4AFD-A5FC-553D9512DE47}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {A80EF8B2-17C3-4382-B947-ABDE0E8AEB1C}
+	EndGlobalSection
+EndGlobal
