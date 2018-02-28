@@ -1,4 +1,4 @@
-﻿namespace MobileSerial_BLE
+﻿namespace MobileSerialLib.BLE
 {
     public enum BLE_Status
     {

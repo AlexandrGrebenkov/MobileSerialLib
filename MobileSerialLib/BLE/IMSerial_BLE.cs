@@ -1,7 +1,6 @@
-﻿using MobileSerialLib;
-using System;
+﻿using System;
 
-namespace MobileSerial_BLE
+namespace MobileSerialLib.BLE
 {
     public interface IMSerial_BLE : IMSerial
     {

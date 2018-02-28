@@ -64,10 +64,6 @@
       <Project>{AAB21A0E-1B0E-496B-83A9-17772E4057A1}</Project>
       <Name>MobileSerialLib</Name>
     </ProjectReference>
-    <ProjectReference Include="..\MobileSerial_BLE\MobileSerial_BLE.csproj">
-      <Project>{a92abd07-4057-458c-84d0-116ad4003fa9}</Project>
-      <Name>MobileSerial_BLE</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\Xamarin\Android\Xamarin.Android.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -1,5 +1,4 @@
-﻿
-namespace MobileSerial_BLE
+﻿namespace MobileSerialLib.BLE
 {
     public class BLE_Device_Info
     {

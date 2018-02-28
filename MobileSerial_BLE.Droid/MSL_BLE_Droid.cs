@@ -1,6 +1,7 @@
 ﻿using Android.Bluetooth;
 using AndroidBluetoothLE.Bluetooth.Client;
 using Java.Util;
+using MobileSerialLib.BLE;
 using System;
 using System.Collections.Generic;
 using System.Linq;
