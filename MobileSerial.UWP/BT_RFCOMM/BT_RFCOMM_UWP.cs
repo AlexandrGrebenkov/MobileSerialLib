@@ -79,6 +79,7 @@ namespace MobileSerial.UWP.BT_RFCOMM
         public async Task<byte[]> ReadAsync(uint timeout = 1000)
         {
             byte[] data = null;
+            var rx = await _socket.InputStream.ReadAsync(data.AsBuffer(),5,InputStreamOptions.Partial);
 
             try
             {
@@ -106,9 +107,16 @@ namespace MobileSerial.UWP.BT_RFCOMM
             throw new NotImplementedException();
         }
 
-        public void Write(byte[] TxBuff, int timeout = 1000)
+        public async void Write(byte[] TxBuff, int timeout = 1000)
         {
-            throw new NotImplementedException();
+            try
+            {
+                await _socket.OutputStream.WriteAsync(TxBuff.AsBuffer());
+            }
+            catch (Exception ex)
+            {
+                Disconnect();
+            }
         }
     }
 }
