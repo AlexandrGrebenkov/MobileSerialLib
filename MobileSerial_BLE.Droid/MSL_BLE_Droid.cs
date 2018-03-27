@@ -1,6 +1,7 @@
 ﻿using Android.Bluetooth;
 using AndroidBluetoothLE.Bluetooth.Client;
 using Java.Util;
+using MobileSerialLib;
 using MobileSerialLib.BLE;
 using System;
 using System.Collections.Generic;
@@ -26,7 +27,7 @@ namespace MobileSerial_BLE.Droid
         /// </summary>
         /// <returns></returns>
         public BLE_Status BLE_Init()
-        {             
+        {
             BluetoothClient _bluetoothClient = BluetoothClient.Instance;
             _bluetoothClient.Initialize();
 
@@ -149,11 +150,10 @@ namespace MobileSerial_BLE.Droid
         #region Запись/Чтение
         /// <summary>Буфер приёма</summary>
         byte[] RxData;
-
+        bool TxMutex = false;
         public void Write(byte[] TxBuff, int timeout = 1000)
         {
             _writingHandler.Write(TxBuff, _characteristic, true);
-            RxData = null;
         }
 
         /// <summary>
@@ -162,7 +162,17 @@ namespace MobileSerial_BLE.Droid
         /// <param name="data"></param>
         private void _writingHandler_ReceivedReadResponce(byte[] data)
         {
+            RxPacks.Add(new RxData { RxPack = data, Date = DateTime.Now });
             RxData = data;
+            try
+            {
+                foreach (var item in RxPacks)
+                {
+                    if (DateTime.Now - item.Date > TimeSpan.FromSeconds(3))
+                        RxPacks.Remove(item);
+                }
+            }
+            catch { }
             _execute?.Invoke(data);
         }
 
@@ -211,7 +221,7 @@ namespace MobileSerial_BLE.Droid
         {
             int t = 0;
             int period = 10;
-            RxData = null;
+            //RxData = null;
             byte[] data = null; ;
             while (t < timeout)
             {
@@ -229,6 +239,40 @@ namespace MobileSerial_BLE.Droid
                 t += period;
             }
             return data;
+        }
+
+        List<RxData> RxPacks = new List<RxData>();
+
+        public async Task<byte[]> ReadAsync(Func<byte[], bool> predicate, uint timeout = 1000)
+        {
+            int t = 0;
+            int period = 10;
+
+            byte[] result = null;
+            while (t < timeout)
+            {
+                if (RxPacks.Count != 0)
+                {
+                    foreach (var item in RxPacks)
+                    {
+                        if (predicate(item.RxPack))
+                        {
+                            result = item.RxPack;
+                            RxPacks.Remove(item);
+                            return result;
+                        }
+                    }
+                }
+                await Task.Delay(period);
+                t += period;
+            }
+
+            return result;
+        }
+
+        public List<RxData> GetList()
+        {
+            return RxPacks;
         }
         #endregion
 
@@ -277,5 +321,8 @@ namespace MobileSerial_BLE.Droid
                 throw new ArgumentException("MAC-Адрес не валидный", nameof(address));
         }
         #endregion
+
+
     }
+
 }

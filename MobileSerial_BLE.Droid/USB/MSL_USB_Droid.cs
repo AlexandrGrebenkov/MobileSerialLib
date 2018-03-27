@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Android.Content;
 using Android.Hardware.Usb;
+using MobileSerialLib;
 using MobileSerialLib.USB;
 
 namespace MobileSerial_BLE.Droid.USB
@@ -121,6 +123,21 @@ namespace MobileSerial_BLE.Droid.USB
         public void Write(byte[] TxBuff, int timeout = 1000)
         {
             deviceConnection.BulkTransfer(writer, TxBuff, TxBuff.Length, timeout);
+        }
+
+        public Task<byte[]> ReadAsync(Func<byte[], bool> predicate, uint timeout = 1000)
+        {
+            throw new NotImplementedException();
+        }
+
+        public List<byte[]> GetList()
+        {
+            throw new NotImplementedException();
+        }
+
+        List<RxData> IMSerial.GetList()
+        {
+            throw new NotImplementedException();
         }
     }
 }
