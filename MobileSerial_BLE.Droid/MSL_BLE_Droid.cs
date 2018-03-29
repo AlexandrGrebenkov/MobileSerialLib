@@ -256,9 +256,9 @@ namespace MobileSerial_BLE.Droid
                     foreach (var item in RxPacks)
                     {
                         if (predicate(item.RxPack))
-                        {
+                        {                            
                             result = item.RxPack;
-                            RxPacks.Remove(item);
+                            FlushRxPool(predicate);
                             return result;
                         }
                     }
@@ -268,6 +268,15 @@ namespace MobileSerial_BLE.Droid
             }
 
             return result;
+        }
+
+        void FlushRxPool(Func<byte[], bool> predicate)
+        {
+            foreach (var item in RxPacks)
+            {
+                if (predicate(item.RxPack))
+                    RxPacks.Remove(item);                
+            }
         }
 
         public List<RxData> GetList()
