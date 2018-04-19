@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 namespace MobileSerialLib
 {
     public interface IMSerial
-    {        
+    {
         /// <summary>
         /// Подключение к устройству
         /// </summary>
@@ -25,6 +25,8 @@ namespace MobileSerialLib
         /// <param name="timeout">Таймаут (в мс)</param>
         /// <returns>Возвращает принятый буфер</returns>
         Task<byte[]> ReadAsync(uint timeout = 1000);
+        System.Collections.Generic.List<RxData> GetList();
+        Task<byte[]> ReadAsync(Func<byte[], bool> predicate, uint timeout = 1000);
         /// <summary>
         /// Запись масссива в устройство
         /// </summary>
@@ -33,5 +35,11 @@ namespace MobileSerialLib
         void Write(byte[] TxBuff, int timeout = 1000);
 
         void RxCallback(Action<byte[]> execute);
+    }
+
+    public class RxData
+    {
+        public DateTime Date;
+        public byte[] RxPack;
     }
 }

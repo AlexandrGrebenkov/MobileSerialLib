@@ -1,5 +1,8 @@
-﻿namespace MobileSerial_BLE
+﻿namespace MobileSerialLib.BLE
 {
+    /// <summary>
+    /// Статус BLE-переферии
+    /// </summary>
     public enum BLE_Status
     {
         NotInit,//Не инициализирован ещё
