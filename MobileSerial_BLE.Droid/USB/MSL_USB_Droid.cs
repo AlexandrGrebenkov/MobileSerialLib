@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Android.App;
 using Android.Content;
@@ -22,7 +23,10 @@ namespace MobileSerial_BLE.Droid.USB
         int VENDOR_ID;
         int PRODUCT_ID;
 
+        public int BufferSize = 1024;
+
         Context _Context;
+        Activity Activity;
 
         UsbManager usbManager;
         UsbDeviceConnection deviceConnection;
@@ -36,18 +40,22 @@ namespace MobileSerial_BLE.Droid.USB
         UsbPermissionReciever usbReciever;
 
         Action<bool> ConnectionChanged;
+        Action<byte[]> ReceivedPack;
 
-        public MSL_USB_Droid(Context context, int vid, int pid)
+        List<RxData> RxPacks = new List<RxData>();
+        byte[] RxData;
+
+        public MSL_USB_Droid(Context context, Activity activity, int vid, int pid)
         {
             VENDOR_ID = vid;
             PRODUCT_ID = pid;
             _Context = context;
-
-
+            Activity = activity;
         }
 
         public void Connect(Action<bool> action)
         {
+            if (deviceConnection != null) return;
             ConnectionChanged = action;
             // Get a usbManager that can access all of the devices
             usbManager = (UsbManager)_Context.GetSystemService(Context.UsbService);
@@ -112,6 +120,55 @@ namespace MobileSerial_BLE.Droid.USB
                     Log("OK!");
 
                     ConnectionChanged?.Invoke(true);
+
+                    #region Настройка асинхронного приёма
+                    usbRequest = new UsbRequest();
+                    usbRequest.Initialize(deviceConnection, reader);
+                    var rx = ByteBuffer.Allocate(BufferSize);
+
+                    usbRequest.Queue(rx, rx.Limit());
+                    ConnectionChanged(true);
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            while (deviceConnection != null)
+                            {
+                                if (deviceConnection.RequestWait() == usbRequest)
+                                {
+                                    Activity.RunOnUiThread(() =>
+                                    {
+                                        byte[] data = new byte[rx.Position()];
+
+                                        for (int i = 0; i < rx.Position(); i++)
+                                            data[i] = (byte)rx.Get(i);
+
+                                        Log($"Получено что-то: {string.Join(", ", data)}");
+
+                                        RxPacks.Add(new RxData { RxPack = data, Date = DateTime.Now });
+                                        RxData = data;
+                                        try
+                                        {
+                                            foreach (var item in RxPacks)
+                                            {
+                                                if (DateTime.Now - item.Date > TimeSpan.FromSeconds(3))
+                                                    RxPacks.Remove(item);
+                                            }
+                                        }
+                                        catch { }
+                                        ReceivedPack?.Invoke(data);
+                                        usbRequest.Queue(rx, rx.Limit());
+                                    });
+
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log($"queue exception: {ex.ToString()}");
+                        }
+                    });
+                    #endregion
                 }
                 catch (Exception ex)
                 {
@@ -132,27 +189,61 @@ namespace MobileSerial_BLE.Droid.USB
 
         public byte[] Read(uint timeout = 1000)
         {
-            byte[] RxBuff = new byte[256];
+            /*byte[] RxBuff = new byte[256];
             var bc = deviceConnection.BulkTransfer(reader, RxBuff, RxBuff.Length, (int)timeout);
             if (bc <= 0) return null;
             byte[] res = new byte[bc];
             System.Buffer.BlockCopy(RxBuff, 0, res, 0, bc);
-            return res;
+            return res;*/
+            int t = 0;
+            int period = 10;
+            RxData = null;
+            byte[] data = null; ;
+            while (t < timeout)
+            {
+                if (RxData != null)
+                {
+                    data = new byte[RxData.Length];
+                    for (int i = 0; i < RxData.Length; i++)
+                    {
+                        data[i] = RxData[i];
+                    }
+                    RxData = null;
+                    break;
+                }
+                Thread.Sleep(period);
+                t += period;
+            }
+            return data;
         }
 
         public async Task<byte[]> ReadAsync(uint timeout = 1000)
         {
-            byte[] RxBuff = new byte[256];
-            var bc = await deviceConnection.BulkTransferAsync(reader, RxBuff, RxBuff.Length, (int)timeout);
-            if (bc <= 0) return null;
-            byte[] res = new byte[bc];
-            System.Buffer.BlockCopy(RxBuff, 0, res, 0, bc);
-            return res;
+            int t = 0;
+            int period = 10;
+            //RxData = null;
+            byte[] data = null; ;
+            while (t < timeout)
+            {
+                if (RxData != null)
+                {
+                    data = new byte[RxData.Length];
+                    for (int i = 0; i < RxData.Length; i++)
+                    {
+                        data[i] = RxData[i];
+                    }
+                    RxData = null;
+                    break;
+                }
+                await Task.Delay(period);
+                t += period;
+            }
+            return data;
         }
 
         public void RxCallback(Action<byte[]> execute)
         {
-            throw new NotImplementedException();
+            ReceivedPack = execute;
         }
 
         public void Write(byte[] TxBuff, int timeout = 1000)
@@ -160,19 +251,53 @@ namespace MobileSerial_BLE.Droid.USB
             deviceConnection.BulkTransfer(writer, TxBuff, TxBuff.Length, timeout);
         }
 
-        public Task<byte[]> ReadAsync(Func<byte[], bool> predicate, uint timeout = 1000)
+        public async Task<byte[]> ReadAsync(Func<byte[], bool> predicate, uint timeout = 1000)
         {
-            throw new NotImplementedException();
+            int t = 0;
+            int period = 10;
+
+            byte[] result = null;
+            while (t < timeout)
+            {
+                if (RxPacks.Count != 0)
+                {
+                    for (int i = RxPacks.Count - 1; i >= 0; i--)
+                    {
+                        var item = RxPacks[i];
+                        if (predicate(item.RxPack))
+                        {
+                            result = item.RxPack;
+                            FlushRxPool(predicate);
+                            return result;
+                        }
+                    }
+                }
+                await Task.Delay(period);
+                t += period;
+            }
+
+            return result;
         }
 
-        public List<byte[]> GetList()
+        public List<RxData> GetList()
         {
-            throw new NotImplementedException();
+            return RxPacks;
         }
 
-        List<RxData> IMSerial.GetList()
-        {
-            throw new NotImplementedException();
+        void FlushRxPool(Func<byte[], bool> predicate)
+        {//TODO: Не всегда корректно работает
+            try
+            {
+                lock (this)
+                {
+                    foreach (var item in RxPacks)
+                    {
+                        if (predicate(item.RxPack))
+                            RxPacks.Remove(item);
+                    }
+                }
+            }
+            catch { }
         }
 
         class UsbPermissionReciever : BroadcastReceiver
