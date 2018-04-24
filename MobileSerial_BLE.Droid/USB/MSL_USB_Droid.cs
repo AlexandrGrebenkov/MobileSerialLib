@@ -45,6 +45,34 @@ namespace MobileSerial_BLE.Droid.USB
         List<RxData> RxPacks = new List<RxData>();
         byte[] RxData;
 
+        public bool IsConnected
+        {
+            get => deviceConnection != null;
+        }
+
+        /// <summary>
+        /// For tests
+        /// </summary>
+        public void CheckPermission()
+        {
+            usbManager = (UsbManager)_Context.GetSystemService(Context.UsbService);
+            var usbDevice = usbManager.DeviceList.FirstOrDefault(
+                item => item.Value.VendorId == VENDOR_ID &&
+                        item.Value.ProductId == PRODUCT_ID).Value;
+            if (!usbManager.HasPermission(usbDevice))
+            {
+                #region Для запроса пермиссии 
+                usbReciever = new UsbPermissionReciever(() => _Context.UnregisterReceiver(usbReciever));
+                _Context.RegisterReceiver(usbReciever, new IntentFilter(ACTION_USB_PERMISSION));
+
+                mPermissionIntent = PendingIntent.GetBroadcast(_Context, RequestPermissionCode, new Intent(ACTION_USB_PERMISSION), 0);
+                usbReciever.InitUSB = null;
+                #endregion
+
+                usbManager.RequestPermission(usbDevice, mPermissionIntent);
+            }
+        }
+
         public MSL_USB_Droid(Context context, Activity activity, int vid, int pid)
         {
             VENDOR_ID = vid;
@@ -127,7 +155,6 @@ namespace MobileSerial_BLE.Droid.USB
                     var rx = ByteBuffer.Allocate(BufferSize);
 
                     usbRequest.Queue(rx, rx.Limit());
-                    ConnectionChanged(true);
                     Task.Run(() =>
                     {
                         try
