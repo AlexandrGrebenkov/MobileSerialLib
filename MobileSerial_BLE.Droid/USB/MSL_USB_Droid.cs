@@ -147,8 +147,6 @@ namespace MobileSerial_BLE.Droid.USB
                     reader = usbInterface.GetEndpoint(1);
                     Log("OK!");
 
-                    ConnectionChanged?.Invoke(true);
-
                     #region Настройка асинхронного приёма
                     usbRequest = new UsbRequest();
                     usbRequest.Initialize(deviceConnection, reader);
@@ -196,6 +194,8 @@ namespace MobileSerial_BLE.Droid.USB
                         }
                     });
                     #endregion
+
+                    ConnectionChanged?.Invoke(true);
                 }
                 catch (Exception ex)
                 {
