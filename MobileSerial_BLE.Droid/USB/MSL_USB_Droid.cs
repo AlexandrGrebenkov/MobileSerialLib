@@ -120,6 +120,7 @@ namespace MobileSerial_BLE.Droid.USB
                     Log("OK!");
 
                     #region Настройка асинхронного приёма
+                    RxPacks.Clear();
                     usbRequest = new UsbRequest();
                     usbRequest.Initialize(deviceConnection, reader);
                     var rx = ByteBuffer.Allocate(BufferSize);
