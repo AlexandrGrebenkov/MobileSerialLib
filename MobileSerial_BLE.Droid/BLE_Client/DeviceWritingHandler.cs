@@ -25,8 +25,7 @@ namespace AndroidBluetoothLE.Bluetooth.Client
 
         private void _gattObserver_CharacteristicValueChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic)
         {
-            var handler = ReceivedReadResponce;
-            if (handler != null) handler(characteristic.GetValue());
+            ReceivedReadResponce?.Invoke(characteristic.GetValue());
         }
 
         public void Dispose()
@@ -41,8 +40,7 @@ namespace AndroidBluetoothLE.Bluetooth.Client
 
         private void OnCharacteristicWritten(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, GattStatus status)
         {
-            var handler = ReceivedWriteResponce;
-            if (handler != null) handler(characteristic, status);
+            ReceivedWriteResponce?.Invoke(characteristic, status);
         }
 
         private void WriteValueInternal(byte[] buffer, BluetoothGattCharacteristic characteristic, bool withResponce)
@@ -51,6 +49,16 @@ namespace AndroidBluetoothLE.Bluetooth.Client
             characteristic.WriteType = withResponce ? GattWriteType.Default : GattWriteType.NoResponse;
             _gatt.WriteCharacteristic(characteristic);
             
+        }
+
+        public void ClearAllReadEvents()
+        {
+            ReceivedReadResponce = data => { };
+            /*return;
+            foreach (ReceivedReadResponceEventHandler d in ReceivedReadResponce.GetInvocationList())
+            {
+                ReceivedReadResponce -= d;
+            }*/
         }
     }
 }
