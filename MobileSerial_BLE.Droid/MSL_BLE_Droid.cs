@@ -20,6 +20,8 @@ namespace MobileSerial_BLE.Droid
         BluetoothDeviceScanner _scanner;
         List<BluetoothDevice> DeviceList = new List<BluetoothDevice>();
 
+        object SyncRxPackObj = new object();
+
         public BLE_Status Status { get; set; }
 
         /// <summary>
@@ -160,7 +162,6 @@ namespace MobileSerial_BLE.Droid
         #region Запись/Чтение
         /// <summary>Буфер приёма</summary>
         byte[] RxData;
-
         List<RxData> RxPacks = new List<RxData>();
 
         public void Write(byte[] TxBuff, int timeout = 1000)
@@ -176,14 +177,16 @@ namespace MobileSerial_BLE.Droid
         {
             try
             {
-                RxPacks.Add(new RxData { RxPack = data, Date = DateTime.Now });
-                RxData = data;
-                foreach (var item in RxPacks)
+                lock (SyncRxPackObj)
                 {
-                    if (DateTime.Now - item.Date > TimeSpan.FromSeconds(3))
-                        RxPacks.Remove(item);
+                    RxPacks.Add(new RxData { RxPack = data, Date = DateTime.Now });
+                    RxData = data;
+                    /*foreach (var item in RxPacks)
+                    {
+                        if (DateTime.Now - item.Date > TimeSpan.FromSeconds(3))
+                            RxPacks.Remove(item);
+                    }*/
                 }
-
                 _execute?.Invoke(data);
             }
             catch (Exception ex)
@@ -289,7 +292,7 @@ namespace MobileSerial_BLE.Droid
         {//TODO: Не всегда корректно работает
             try
             {
-                lock (this)
+                lock (SyncRxPackObj)
                 {
                     foreach (var item in RxPacks)
                     {
@@ -353,7 +356,5 @@ namespace MobileSerial_BLE.Droid
         }
         #endregion
 
-
     }
-
 }
