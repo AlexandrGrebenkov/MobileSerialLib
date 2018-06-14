@@ -72,8 +72,8 @@ namespace MobileSerial_BLE.Droid
                 switch (profileState)
                 {
                     case ProfileState.Connected:
-                        {//Подключились
-                            _connectionHandler.DiscoverServices(status =>
+                    {//Подключились
+                        _connectionHandler.DiscoverServices(status =>
                         {
                             if (status == GattStatus.Success)
                             {//Получен список сервисов
@@ -102,19 +102,19 @@ namespace MobileSerial_BLE.Droid
                             else
                                 action?.Invoke(false);
                         });
-                            break;
-                        }
+                        break;
+                    }
                     case ProfileState.Disconnected:
-                        {
-                            Status = BLE_Status.NotConnect;
-                            action?.Invoke(false);
-                            break;
-                        }
+                    {
+                        Status = BLE_Status.NotConnect;
+                        action?.Invoke(false);
+                        break;
+                    }
                     default:
-                        {
-                            action?.Invoke(false);
-                            break;
-                        }
+                    {
+                        action?.Invoke(false);
+                        break;
+                    }
                 }
             });
 
@@ -146,8 +146,6 @@ namespace MobileSerial_BLE.Droid
         {
             _connectionHandler.DisconnectAsync();
             _writingHandler.ClearAllReadEvents();
-            /*if (_writingHandler != null)
-                _writingHandler.ReceivedReadResponce -= _writingHandler_ReceivedReadResponce;*/
             RxPacks.Clear();
         }
 
@@ -155,8 +153,6 @@ namespace MobileSerial_BLE.Droid
         {
             _connectionHandler.Close();
             _writingHandler.ClearAllReadEvents();
-            /*if (_writingHandler != null)
-                _writingHandler.ReceivedReadResponce -= _writingHandler_ReceivedReadResponce;*/
             RxPacks.Clear();
         }
         #endregion
