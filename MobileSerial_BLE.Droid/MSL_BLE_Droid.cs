@@ -146,16 +146,16 @@ namespace MobileSerial_BLE.Droid
         /// </summary>
         public void Disconnect()
         {
-            _connectionHandler.DisconnectAsync();
-            _writingHandler.ClearAllReadEvents();
-            RxPacks.Clear();
+            _connectionHandler?.DisconnectAsync();
+            _writingHandler?.ClearAllReadEvents();
+            RxPacks?.Clear();
         }
 
         public void Close()
         {
-            _connectionHandler.Close();
-            _writingHandler.ClearAllReadEvents();
-            RxPacks.Clear();
+            _connectionHandler?.Close();
+            _writingHandler?.ClearAllReadEvents();
+            RxPacks?.Clear();
         }
         #endregion
 
