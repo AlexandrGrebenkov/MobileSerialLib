@@ -29,5 +29,7 @@ namespace MobileSerialLib.BLE
         /// <param name="name"></param>
         void SelectDeviceByName(string name);
         void SelectDeviceByAddress(string address);
+
+        void Close();
     }
 }

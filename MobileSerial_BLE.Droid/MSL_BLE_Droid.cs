@@ -20,6 +20,8 @@ namespace MobileSerial_BLE.Droid
         BluetoothDeviceScanner _scanner;
         List<BluetoothDevice> DeviceList = new List<BluetoothDevice>();
 
+        object SyncRxPackObj = new object();
+
         public BLE_Status Status { get; set; }
 
         /// <summary>
@@ -74,33 +76,34 @@ namespace MobileSerial_BLE.Droid
                     case ProfileState.Connected:
                     {//Подключились
                         _connectionHandler.DiscoverServices(status =>
-                    {
-                        if (status == GattStatus.Success)
-                        {//Получен список сервисов
-                            _characteristic = GetCharacteristic(GetServices());
-                            var notify = new DeviceNotifyingHandler(_connectionHandler.GattValue, GattClientObserver.Instance);
+                        {
+                            if (status == GattStatus.Success)
+                            {//Получен список сервисов
+                                _characteristic = GetCharacteristic(GetServices());
+                                var notify = new DeviceNotifyingHandler(_connectionHandler.GattValue, GattClientObserver.Instance);
 
-                            notify.Subscribe(_characteristic, (bool notifyStatus) =>
-                            {
-                                if (notifyStatus == true)
-                                {//Нотификация пройдена
-                                    _writingHandler = new DeviceWritingHandler(_connectionHandler.GattValue, GattClientObserver.Instance);
-                                    _writingHandler.ReceivedReadResponce += _writingHandler_ReceivedReadResponce;
-                                    Status = BLE_Status.Connect;
-                                    RxPacks.Clear();
-                                    action?.Invoke(true);
-                                }
-                                else
-                                {//Если нотификация не пройдена, то делать нам тут нечего и мы отключаемся от девайса
-                                    action?.Invoke(false);
-                                }
-                                notify.Dispose();//при любом результате выходим так
-                            });
+                                notify.Subscribe(_characteristic, (bool notifyStatus) =>
+                                {
+                                    if (notifyStatus == true)
+                                    {//Нотификация пройдена
+                                        _writingHandler = new DeviceWritingHandler(_connectionHandler.GattValue, GattClientObserver.Instance);
+                                        _writingHandler.ClearAllReadEvents();
+                                        _writingHandler.ReceivedReadResponce += _writingHandler_ReceivedReadResponce;
+                                        Status = BLE_Status.Connect;
+                                        RxPacks.Clear();
+                                        action?.Invoke(true);
+                                    }
+                                    else
+                                    {//Если нотификация не пройдена, то делать нам тут нечего и мы отключаемся от девайса
+                                        action?.Invoke(false);
+                                    }
+                                    notify.Dispose();//при любом результате выходим так
+                                });
 
-                        }
-                        else
-                            action?.Invoke(false);
-                    });
+                            }
+                            else
+                                action?.Invoke(false);
+                        });
                         break;
                     }
                     case ProfileState.Disconnected:
@@ -143,19 +146,23 @@ namespace MobileSerial_BLE.Droid
         /// </summary>
         public void Disconnect()
         {
-            if (_connectionHandler.IsConnected == true)
-            {
-                _connectionHandler.DisconnectAsync();
-                _writingHandler.ReceivedReadResponce -= _writingHandler_ReceivedReadResponce;
-                RxPacks.Clear();
-            }
+            _connectionHandler?.DisconnectAsync();
+            _writingHandler?.ClearAllReadEvents();
+            RxPacks?.Clear();
+        }
 
+        public void Close()
+        {
+            _connectionHandler?.Close();
+            _writingHandler?.ClearAllReadEvents();
+            RxPacks?.Clear();
         }
         #endregion
 
         #region Запись/Чтение
         /// <summary>Буфер приёма</summary>
         byte[] RxData;
+        List<RxData> RxPacks = new List<RxData>();
 
         public void Write(byte[] TxBuff, int timeout = 1000)
         {
@@ -168,18 +175,24 @@ namespace MobileSerial_BLE.Droid
         /// <param name="data"></param>
         private void _writingHandler_ReceivedReadResponce(byte[] data)
         {
-            RxPacks.Add(new RxData { RxPack = data, Date = DateTime.Now });
-            RxData = data;
             try
             {
-                foreach (var item in RxPacks)
+                lock (SyncRxPackObj)
                 {
-                    if (DateTime.Now - item.Date > TimeSpan.FromSeconds(3))
-                        RxPacks.Remove(item);
+                    RxPacks.Add(new RxData { RxPack = data, Date = DateTime.Now });
+                    RxData = data;
+                    /*foreach (var item in RxPacks)
+                    {
+                        if (DateTime.Now - item.Date > TimeSpan.FromSeconds(3))
+                            RxPacks.Remove(item);
+                    }*/
                 }
+                _execute?.Invoke(data);
             }
-            catch { }
-            _execute?.Invoke(data);
+            catch (Exception ex)
+            {
+
+            }
         }
 
         Action<byte[]> _execute;
@@ -247,8 +260,6 @@ namespace MobileSerial_BLE.Droid
             return data;
         }
 
-        List<RxData> RxPacks = new List<RxData>();
-
         public async Task<byte[]> ReadAsync(Func<byte[], bool> predicate, uint timeout = 1000)
         {
             int t = 0;
@@ -281,7 +292,7 @@ namespace MobileSerial_BLE.Droid
         {//TODO: Не всегда корректно работает
             try
             {
-                lock (this)
+                lock (SyncRxPackObj)
                 {
                     foreach (var item in RxPacks)
                     {
@@ -345,7 +356,5 @@ namespace MobileSerial_BLE.Droid
         }
         #endregion
 
-
     }
-
 }

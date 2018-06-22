@@ -52,8 +52,13 @@ namespace AndroidBluetoothLE.Bluetooth.Client
         public Task DisconnectAsync()
         {
             _disconnectTaskSource = new TaskCompletionSource<object>();
-            GattValue.Disconnect();
+            GattValue?.Disconnect();
             return _disconnectTaskSource.Task;
+        }
+
+        public void Close()
+        {
+            GattValue?.Close();
         }
 
         public IList<BluetoothGattService> GetServiceList()
