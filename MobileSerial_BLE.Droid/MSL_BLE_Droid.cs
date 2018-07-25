@@ -177,15 +177,13 @@ namespace MobileSerial_BLE.Droid
         {
             try
             {
+                var dtThreshold = DateTime.Now.Add(TimeSpan.FromSeconds(-3));
                 lock (SyncRxPackObj)
                 {
-                    RxPacks.Add(new RxData { RxPack = data, Date = DateTime.Now });
+                    RxPacks?.Add(new RxData { RxPack = data, Date = DateTime.Now });
                     RxData = data;
-                    /*foreach (var item in RxPacks)
-                    {
-                        if (DateTime.Now - item.Date > TimeSpan.FromSeconds(3))
-                            RxPacks.Remove(item);
-                    }*/
+
+                    RxPacks.RemoveAll(item => item.Date < dtThreshold); //Удаление старых посылок
                 }
                 _execute?.Invoke(data);
             }
@@ -268,7 +266,7 @@ namespace MobileSerial_BLE.Droid
             byte[] result = null;
             while (t < timeout)
             {
-                if (RxPacks.Count != 0)
+                if (RxPacks?.Count != 0)
                 {
                     for (int i = RxPacks.Count - 1; i >= 0; i--)
                     {
