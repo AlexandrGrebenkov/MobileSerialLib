@@ -42,6 +42,7 @@ namespace MobileSerial_BLE.Droid.USB
         Action<bool> ConnectionChanged;
         Action<byte[]> ReceivedPack;
 
+        object SyncRxPackObj = new object();
         List<RxData> RxPacks = new List<RxData>();
         byte[] RxData;
 
@@ -148,7 +149,10 @@ namespace MobileSerial_BLE.Droid.USB
                     Log("OK!");
 
                     #region Настройка асинхронного приёма
-                    RxPacks.Clear();
+                    lock (SyncRxPackObj)
+                    {
+                        RxPacks.Clear();
+                    }
                     usbRequest = new UsbRequest();
                     usbRequest.Initialize(deviceConnection, reader);
                     var rx = ByteBuffer.Allocate(BufferSize);
@@ -171,17 +175,14 @@ namespace MobileSerial_BLE.Droid.USB
 
                                         Log($"Получено что-то: {string.Join(", ", data)}");
 
-                                        RxPacks.Add(new RxData { RxPack = data, Date = DateTime.Now });
-                                        RxData = data;
-                                        try
+                                        var dtThreshold = DateTime.Now.Add(TimeSpan.FromSeconds(-3));
+                                        lock (SyncRxPackObj)
                                         {
-                                            foreach (var item in RxPacks)
-                                            {
-                                                if (DateTime.Now - item.Date > TimeSpan.FromSeconds(3))
-                                                    RxPacks.Remove(item);
-                                            }
+                                            RxPacks.Add(new RxData { RxPack = data, Date = DateTime.Now });
+                                            RxData = data;
+
+                                            RxPacks.RemoveAll(item => item.Date < dtThreshold); //Удаление старых посылок
                                         }
-                                        catch { }
                                         ReceivedPack?.Invoke(data);
                                         usbRequest.Queue(rx, rx.Limit());
                                     });
@@ -313,16 +314,12 @@ namespace MobileSerial_BLE.Droid.USB
         }
 
         void FlushRxPool(Func<byte[], bool> predicate)
-        {//TODO: Не всегда корректно работает
+        {//TODO: Не всегда корректно работает (Изменил! Надо тестить)
             try
             {
-                lock (this)
+                lock (SyncRxPackObj)
                 {
-                    foreach (var item in RxPacks)
-                    {
-                        if (predicate(item.RxPack))
-                            RxPacks.Remove(item);
-                    }
+                    RxPacks.RemoveAll(item => predicate(item.RxPack)); //Удаление старых посылок
                 }
             }
             catch { }
@@ -337,24 +334,23 @@ namespace MobileSerial_BLE.Droid.USB
                 String action = intent.Action;
                 if (ACTION_USB_PERMISSION.Equals(action))
                 {
-                    lock (this)
+
+                    UsbDevice device = (UsbDevice)intent
+                            .GetParcelableExtra(UsbManager.ExtraDevice);
+
+                    if (intent.GetBooleanExtra(
+                            UsbManager.ExtraPermissionGranted, false))
                     {
-                        UsbDevice device = (UsbDevice)intent
-                                .GetParcelableExtra(UsbManager.ExtraDevice);
-
-                        if (intent.GetBooleanExtra(
-                                UsbManager.ExtraPermissionGranted, false))
+                        if (device != null)
                         {
-                            if (device != null)
-                            {
-                                InitUSB?.Invoke();
-                            }
-                        }
-                        else
-                        {
-
+                            InitUSB?.Invoke();
                         }
                     }
+                    else
+                    {
+
+                    }
+
                 }
                 Unregister?.Invoke();
             }
