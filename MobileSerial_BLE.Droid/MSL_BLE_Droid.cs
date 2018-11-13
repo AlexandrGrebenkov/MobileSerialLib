@@ -18,11 +18,22 @@ namespace MobileSerial_BLE.Droid
         BluetoothDevice device;
 
         BluetoothDeviceScanner _scanner;
-        List<BluetoothDevice> DeviceList = new List<BluetoothDevice>();
+        List<BluetoothDevice> DeviceList;
 
-        object SyncRxPackObj = new object();
+        object SyncRxPackObj;
 
         public BLE_Status Status { get; set; }
+
+        /// <summary>Буфер приёма</summary>
+        byte[] RxData;
+        List<RxData> RxPacks;
+
+        public MSL_BLE_Droid()
+        {
+            DeviceList = new List<BluetoothDevice>();
+            SyncRxPackObj = new object();
+            RxPacks = new List<RxData>();
+        }
 
         /// <summary>
         /// Инициализация Bluetooth-модуля
@@ -160,9 +171,6 @@ namespace MobileSerial_BLE.Droid
         #endregion
 
         #region Запись/Чтение
-        /// <summary>Буфер приёма</summary>
-        byte[] RxData;
-        List<RxData> RxPacks = new List<RxData>();
 
         public void Write(byte[] TxBuff, int timeout = 1000)
         {
@@ -266,7 +274,7 @@ namespace MobileSerial_BLE.Droid
             byte[] result = null;
             while (t < timeout)
             {
-                if (RxPacks?.Count != 0)
+                if (RxPacks != null && RxPacks.Count != 0)
                 {
                     for (int i = RxPacks.Count - 1; i >= 0; i--)
                     {
@@ -287,16 +295,12 @@ namespace MobileSerial_BLE.Droid
         }
 
         void FlushRxPool(Func<byte[], bool> predicate)
-        {//TODO: Не всегда корректно работает
+        {//TODO: Не всегда корректно работает (Изменил! Надо тестить)
             try
             {
                 lock (SyncRxPackObj)
                 {
-                    foreach (var item in RxPacks)
-                    {
-                        if (predicate(item.RxPack))
-                            RxPacks.Remove(item);
-                    }
+                    RxPacks.RemoveAll(item => predicate(item.RxPack)); //Удаление старых посылок
                 }
             }
             catch { }
@@ -310,6 +314,7 @@ namespace MobileSerial_BLE.Droid
 
         #region Сканирование/Выбор
         private Action<BLE_Device_Info> onDeviceFound;
+
         public void StartScan(Action<BLE_Device_Info> execute)
         {
             if ((Status != BLE_Status.BT_NotAwailable) &&
